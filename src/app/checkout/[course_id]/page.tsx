@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { getCourseBySlug } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-export default function CheckoutPage({ params }: { params: { course_id: string } }) {
+export default function CheckoutPage({ params }: { params: Promise<{ course_id: string }> }) {
+  const { course_id } = use(params);
   const { user, token, isAuthenticated, isLoading } = useAuth();
   const [course, setCourse] = useState<any>(null);
   const [paymentMethod, setPaymentMethod] = useState('bkash');
@@ -20,7 +21,7 @@ export default function CheckoutPage({ params }: { params: { course_id: string }
   // We are using the slug to fetch course details, but the parameter is named course_id
   useEffect(() => {
     const fetchCourse = async () => {
-      const data = await getCourseBySlug(params.course_id);
+      const data = await getCourseBySlug(course_id);
       if (data) {
         setCourse(data);
       } else {
@@ -29,7 +30,7 @@ export default function CheckoutPage({ params }: { params: { course_id: string }
       setLoading(false);
     };
     fetchCourse();
-  }, [params.course_id]);
+  }, [course_id]);
 
   if (isLoading || loading) {
     return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;

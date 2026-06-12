@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
-export default function UnitPage({ params }: { params: { id: string, unit_id: string } }) {
+export default function UnitPage({ params }: { params: Promise<{ id: string, unit_id: string }> }) {
+  const { id, unit_id } = use(params);
   const { token, isAuthenticated, isLoading } = useAuth();
   const [unit, setUnit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -22,7 +23,7 @@ export default function UnitPage({ params }: { params: { id: string, unit_id: st
     const fetchUnitDetail = async () => {
       if (!token) return;
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://server.assessmentbd.com/api'}/user/learn/course/${params.id}/unit/${params.unit_id}`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://server.assessmentbd.com/api'}/user/learn/course/${id}/unit/${unit_id}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
@@ -45,7 +46,7 @@ export default function UnitPage({ params }: { params: { id: string, unit_id: st
     if (!isLoading && isAuthenticated) {
       fetchUnitDetail();
     }
-  }, [token, isLoading, isAuthenticated, params.id, params.unit_id]);
+  }, [token, isLoading, isAuthenticated, id, unit_id]);
 
   // 2. Exam Timer Logic
   useEffect(() => {

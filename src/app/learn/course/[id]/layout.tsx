@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -10,8 +10,9 @@ export default function LearnLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = use(params);
   const { token, isAuthenticated, isLoading } = useAuth();
   const [course, setCourse] = useState<any>(null);
   const [units, setUnits] = useState<any[]>([]);
@@ -23,7 +24,7 @@ export default function LearnLayout({
     const fetchCourseData = async () => {
       if (!token) return;
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://server.assessmentbd.com/api'}/user/learn/course/${params.id}/units`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://server.assessmentbd.com/api'}/user/learn/course/${id}/units`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
@@ -48,7 +49,7 @@ export default function LearnLayout({
     } else if (!isLoading && !isAuthenticated) {
       router.push('/login');
     }
-  }, [token, isLoading, isAuthenticated, params.id, router]);
+  }, [token, isLoading, isAuthenticated, id, router]);
 
   if (loading || isLoading) {
     return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
@@ -74,7 +75,7 @@ export default function LearnLayout({
             return (
               <Link 
                 key={unit.id} 
-                href={`/learn/course/${params.id}/unit/${unit.id}`}
+                href={`/learn/course/${id}/unit/${unit.id}`}
                 className={`flex items-start p-3 rounded-lg border transition-all ${isActive ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100 hover:border-gray-300 hover:bg-gray-50'}`}
               >
                 <div className={`mt-0.5 mr-3 flex-shrink-0 ${isActive ? 'text-blue-600' : 'text-gray-400'}`}>

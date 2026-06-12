@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-export default function LearnCoursePage({ params }: { params: { id: string } }) {
+export default function LearnCoursePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const { token, isAuthenticated, isLoading } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -15,7 +16,7 @@ export default function LearnCoursePage({ params }: { params: { id: string } }) 
     const fetchCourseData = async () => {
       if (!token) return;
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://server.assessmentbd.com/api'}/user/learn/course/${params.id}/units`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://server.assessmentbd.com/api'}/user/learn/course/${id}/units`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
@@ -26,7 +27,7 @@ export default function LearnCoursePage({ params }: { params: { id: string } }) 
           setData(result.data);
           // Redirect to first unit if available
           if (result.data.units && result.data.units.length > 0) {
-            router.replace(`/learn/course/${params.id}/unit/${result.data.units[0].id}`);
+            router.replace(`/learn/course/${id}/unit/${result.data.units[0].id}`);
           }
         }
       } catch (err) {
@@ -41,7 +42,7 @@ export default function LearnCoursePage({ params }: { params: { id: string } }) 
     } else if (!isLoading && !isAuthenticated) {
       router.push('/login');
     }
-  }, [token, isLoading, isAuthenticated, params.id, router]);
+  }, [token, isLoading, isAuthenticated, id, router]);
 
   if (loading || isLoading) {
     return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
