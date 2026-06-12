@@ -6,7 +6,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   if (!page) return { title: 'Page Not Found' };
   
   return {
-    title: \`\${page.title} - AssessmentBD\`,
+    title: `${page.title} - AssessmentBD`,
   };
 }
 

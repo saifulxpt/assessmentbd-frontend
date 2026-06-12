@@ -7,7 +7,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   if (!course) return { title: 'Course Not Found' };
   
   return {
-    title: \`\${course.title} - AssessmentBD\`,
+    title: `${course.title} - AssessmentBD`,
     description: course.description?.replace(/<[^>]*>?/gm, '').substring(0, 160) || 'Course details',
   };
 }
@@ -39,7 +39,7 @@ export default async function CourseDetailsPage({ params }: { params: { slug: st
             
             <div className="flex flex-wrap items-center gap-4">
               <button className="bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-lg transition-colors">
-                Enroll Now - {course.price > 0 ? \`৳\${course.price}\` : 'Free'}
+                Enroll Now - {course.price > 0 ? `৳${course.price}` : 'Free'}
               </button>
             </div>
           </div>

@@ -7,7 +7,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   if (!blog) return { title: 'Blog Not Found' };
   
   return {
-    title: \`\${blog.title} - AssessmentBD\`,
+    title: `${blog.title} - AssessmentBD`,
     description: blog.content?.replace(/<[^>]*>?/gm, '').substring(0, 160) || 'Blog details',
   };
 }

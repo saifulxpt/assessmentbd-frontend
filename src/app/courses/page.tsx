@@ -34,10 +34,10 @@ export default async function CoursesPage() {
                   <h3 className="text-xl font-semibold mb-2 text-gray-800 line-clamp-2">{course.title}</h3>
                   <div className="flex justify-between items-center mt-4">
                     <span className="text-green-600 font-bold text-lg">
-                      {course.price > 0 ? \`৳\${course.price}\` : 'Free'}
+                      {course.price > 0 ? `৳${course.price}` : 'Free'}
                     </span>
                     <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-                      {course.duration ? \`\${course.duration} hrs\` : 'Self-paced'}
+                      {course.duration ? `${course.duration} hrs` : 'Self-paced'}
                     </span>
                   </div>
                 </div>
