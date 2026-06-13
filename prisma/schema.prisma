@@ -613,6 +613,7 @@ enum subscriptions_payment_method {
   wallet
   manual
   sslcommerz
+  piprapay
   aamarpay
 }
 
