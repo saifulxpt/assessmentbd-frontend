@@ -56,3 +56,4 @@ fix_settings.js
 fix_tags.js
 fix_vars.js
 clean_map.js
+deploy_temp.js

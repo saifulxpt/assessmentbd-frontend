@@ -1,0 +1,42 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploying code via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: '160.25.226.152'
+          username: 'root'
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            # Find next.js project directory
+            PROJECT_DIR=$(find / -name "package.json" -not -path "*/node_modules/*" 2>/dev/null | grep "assessment" | sed 's/\/package.json//g' | head -n 1)
+            if [ -z "$PROJECT_DIR" ]; then
+              echo "❌ Error: Project folder not found!"
+              exit 1
+            fi
+            cd "$PROJECT_DIR"
+            
+            # Pull latest changes from git
+            git pull origin main
+            
+            # Load node environments if using nvm
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            
+            # Install packages and build
+            npm install
+            npm run build
+            
+            # Restart the app in PM2
+            pm2 restart all || npx pm2 restart all
+            
+            echo "✅ Auto-Deployment Completed Successfully!"
