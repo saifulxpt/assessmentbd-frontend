@@ -1,44 +1,49 @@
-'use client';
-
-import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
+import { getSession } from '@/lib/auth-utils';
+import { prisma } from '@/lib/prisma';
+import { logoutAction } from '@/app/actions/auth.actions';
 
-export default function AuthNav() {
-  const { user, isAuthenticated, logout, isLoading } = useAuth();
+export default async function AuthNav() {
+  const session = await getSession();
 
-  if (isLoading) {
-    return <div className="h-10 w-20 animate-pulse bg-gray-200 rounded-lg"></div>;
-  }
+  if (session && session.userId) {
+    const user = await prisma.users.findUnique({
+      where: { id: BigInt(session.userId) },
+      select: { name: true, is_admin: true }
+    });
 
-  if (isAuthenticated && user) {
-    return (
-      <div className="flex items-center space-x-4">
-        <Link href="/user/dashboard" className="flex items-center space-x-2 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">
-          {user.avatar ? (
-            <img src={user.avatar} alt="Avatar" className="w-8 h-8 rounded-full object-cover" />
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
-              {user.name.charAt(0).toUpperCase()}
-            </div>
-          )}
-          <span className="font-medium text-gray-700 hidden sm:block">{user.name}</span>
-        </Link>
-        <button 
-          onClick={logout}
-          className="text-gray-500 hover:text-red-600 text-sm font-medium transition-colors"
-        >
-          Log out
-        </button>
-      </div>
-    );
+    if (user) {
+      return (
+        <div className="flex items-center space-x-4">
+          <Link 
+            href={user.is_admin ? "/admin/dashboard" : "/user/dashboard"}
+            prefetch={false}
+            className="text-sm font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 px-5 py-2.5 rounded-xl transition"
+          >
+            Dashboard
+          </Link>
+          <form action={logoutAction}>
+            <button 
+              type="submit"
+              className="text-sm font-bold text-red-600 hover:text-red-800 px-3 py-2 rounded-xl hover:bg-red-50 transition cursor-pointer"
+            >
+              Logout
+            </button>
+          </form>
+        </div>
+      );
+    }
   }
 
   return (
-    <>
-      <Link href="/login" className="text-gray-600 hover:text-blue-600 font-medium transition-colors">Log in</Link>
-      <Link href="/register" className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm ml-4">
-        Sign up
+    <div className="flex items-center space-x-4">
+      <Link 
+        href="/login" 
+        prefetch={false}
+        className="text-sm font-bold text-white hero-gradient hover:opacity-90 px-6 py-3 rounded-xl shadow-md shadow-blue-500/20 transition transform active:scale-95"
+      >
+        লগইন / শুরু করুন
       </Link>
-    </>
+    </div>
   );
 }

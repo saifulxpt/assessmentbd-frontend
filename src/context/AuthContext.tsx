@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { getCurrentUserAction } from '@/app/actions/auth.actions';
 
 interface User {
   id: number;
@@ -31,19 +32,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
 
   useEffect(() => {
-    // Check local storage / cookies on mount
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-
-    if (storedToken && storedUser) {
-      setToken(storedToken);
+    const checkUserSession = async () => {
       try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error("Failed to parse user data");
+        const currentUser = await getCurrentUserAction();
+        if (currentUser) {
+          setUser(currentUser);
+          setToken("session-active");
+          localStorage.setItem('user', JSON.stringify(currentUser));
+          localStorage.setItem('token', 'session-active');
+        } else {
+          setUser(null);
+          setToken(null);
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+      } catch (err) {
+        console.error("Session check error:", err);
+        // Fallback to local storage if API fails
+        const storedToken = localStorage.getItem('token');
+        const storedUser = localStorage.getItem('user');
+        if (storedToken && storedUser) {
+          setToken(storedToken);
+          try {
+            setUser(JSON.parse(storedUser));
+          } catch (e) {}
+        }
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
+    };
+
+    checkUserSession();
   }, []);
 
   const login = (newToken: string, userData: User) => {

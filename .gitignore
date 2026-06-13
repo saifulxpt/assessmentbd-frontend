@@ -39,3 +39,20 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+
+# database dumps
+*.sql
+
+# backups and transition scripts
+*.bak
+convert_blade.js
+convert_schema.js
+fix_eslint.js
+fix_jsx.js
+fix_onerror.js
+fix_settings.js
+fix_tags.js
+fix_vars.js
+clean_map.js

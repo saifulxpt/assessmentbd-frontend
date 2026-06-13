@@ -56,3 +56,32 @@ export async function getPageContent(slug: string) {
   const res = await fetchAPI(`/frontend/pages/${slug}`);
   return res?.success ? res.data : null;
 }
+
+export function getResourceUrl(path: string | null | undefined): string {
+  if (!path) return '';
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL
+    ? process.env.NEXT_PUBLIC_API_URL.replace(/\/api$/, '')
+    : '';
+  
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+
+  // Normalize legacy database paths where resources are prefixed with uploads/
+  let normalizedPath = path;
+  if (path.startsWith('uploads/resources/')) {
+    normalizedPath = path.replace('uploads/resources/', 'resources/');
+  }
+
+  if (normalizedPath.startsWith('uploads/')) {
+    return `${baseUrl}/${normalizedPath}`;
+  }
+  if (normalizedPath.startsWith('resources/')) {
+    return `${baseUrl}/storage/${normalizedPath}`;
+  }
+  return `${baseUrl}/storage/${normalizedPath}`;
+}
+
+
+
+

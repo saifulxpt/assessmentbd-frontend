@@ -48,6 +48,30 @@ export default function UnitPage({ params }: { params: Promise<{ id: string, uni
     }
   }, [token, isLoading, isAuthenticated, id, unit_id]);
 
+  // Submit Exam
+  const submitExam = async () => {
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://server.assessmentbd.com/api'}/user/learn/exam/${unit.exam.id}/submit`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ answers })
+      });
+      const result = await res.json();
+      if (result.success) {
+        setExamResult(result.data);
+      }
+    } catch (err) {
+      console.error("Failed to submit exam", err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   // 2. Exam Timer Logic
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -80,30 +104,6 @@ export default function UnitPage({ params }: { params: Promise<{ id: string, uni
       console.error("Failed to load questions", err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Submit Exam
-  const submitExam = async () => {
-    setSubmitting(true);
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://server.assessmentbd.com/api'}/user/learn/exam/${unit.exam.id}/submit`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ answers })
-      });
-      const result = await res.json();
-      if (result.success) {
-        setExamResult(result.data);
-      }
-    } catch (err) {
-      console.error("Failed to submit exam", err);
-    } finally {
-      setSubmitting(false);
     }
   };
 

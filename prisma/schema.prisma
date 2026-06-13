@@ -1,0 +1,636 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model blogs {
+  id              BigInt       @id @default(autoincrement())
+  title           String
+  slug            String       @unique
+  excerpt         String?
+  content         String?
+  featured_image  String?
+  category        String?
+  tags            String?
+  author_name     String       @default("AssessmentBD Team")
+  status          blogs_status @default(draft)
+  is_featured     Boolean      @default(false)
+  seo_title       String?
+  seo_description String?
+  seo_keywords    String?
+  og_image        String?
+  views           BigInt       @default(0)
+  reading_time    Int          @default(1)
+  published_at    DateTime?
+  created_at      DateTime?
+  updated_at      DateTime?
+}
+
+model cache {
+  key        String @id
+  value      String
+  expiration BigInt
+
+  @@index([expiration])
+}
+
+model cache_locks {
+  key        String @id
+  owner      String
+  expiration BigInt
+
+  @@index([expiration])
+}
+
+model contact_messages {
+  id         BigInt    @id @default(autoincrement())
+  name       String
+  email      String?
+  phone      String?
+  subject    String?
+  message    String
+  read_at    DateTime?
+  created_at DateTime?
+  updated_at DateTime?
+}
+
+model coupons {
+  id                  BigInt                @id @default(autoincrement())
+  code                String                @unique
+  discount_type       coupons_discount_type @default(flat)
+  discount_value      Decimal               @default(0.00)
+  max_uses            Int                   @default(0)
+  max_uses_per_user   Int                   @default(0)
+  used_count          Int                   @default(0)
+  first_purchase_only Boolean               @default(false)
+  expires_at          DateTime?
+  is_active           Boolean               @default(true)
+  created_at          DateTime?
+  updated_at          DateTime?
+  course_id           BigInt?
+  plan_restriction    String                @default("all")
+  courses             courses?              @relation(fields: [course_id], references: [id], onUpdate: NoAction)
+
+  @@index([course_id])
+}
+
+model course_leads {
+  id         BigInt    @id @default(autoincrement())
+  mobile     String
+  course_id  BigInt
+  status     String    @default("pending")
+  created_at DateTime?
+  updated_at DateTime?
+  courses    courses   @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([mobile, course_id])
+  @@index([course_id])
+}
+
+model course_units {
+  id               BigInt             @id @default(autoincrement())
+  course_id        BigInt
+  title            String
+  description      String?
+  sort_order       Int                @default(0)
+  is_active        Boolean            @default(true)
+  created_at       DateTime?
+  updated_at       DateTime?
+  courses          courses            @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  exams            exams[]
+  unit_written_qas unit_written_qas[]
+
+  @@index([course_id])
+}
+
+model courses {
+  id              BigInt          @id @default(autoincrement())
+  title           String
+  level           String
+  category        String?
+  sector          String?
+  occupation      String?
+  slug            String?         @unique
+  description     String?
+  seo_title       String?
+  seo_description String?
+  seo_keywords    String?
+  thumbnail       String?
+  is_active       Boolean         @default(true)
+  is_featured     Boolean         @default(false)
+  featured_label  String?
+  sort_order      Int             @default(0)
+  created_at      DateTime?
+  updated_at      DateTime?
+  coupons         coupons[]
+  course_leads    course_leads[]
+  course_units    course_units[]
+  exams           exams[]
+  questions       questions[]
+  subscriptions   subscriptions[]
+  users           users[]
+}
+
+model email_campaign_logs {
+  id            BigInt    @id @default(autoincrement())
+  sent_by       BigInt
+  subject       String
+  message       String
+  segment       String    @default("all")
+  total_count   Int       @default(0)
+  sent_count    Int       @default(0)
+  failed_count  Int       @default(0)
+  user_ids_hash String?
+  completed_at  DateTime?
+  created_at    DateTime?
+  updated_at    DateTime?
+  users         users     @relation(fields: [sent_by], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([sent_by])
+}
+
+model exam_answers {
+  id                 BigInt            @id @default(autoincrement())
+  attempt_id         BigInt
+  question_id        BigInt
+  selected_option_id BigInt?
+  written_answer     String?
+  is_correct         Boolean?
+  marks_obtained     Decimal           @default(0.00)
+  created_at         DateTime          @default(now())
+  exam_attempts      exam_attempts     @relation(fields: [attempt_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  questions          questions         @relation(fields: [question_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  question_options   question_options? @relation(fields: [selected_option_id], references: [id], onUpdate: NoAction)
+
+  @@index([question_id])
+  @@index([selected_option_id])
+  @@index([attempt_id])
+}
+
+model exam_attempts {
+  id           BigInt               @id @default(autoincrement())
+  user_id      BigInt
+  exam_id      BigInt
+  score        Decimal              @default(0.00)
+  total_marks  Int
+  percentage   Decimal              @default(0.00)
+  status       exam_attempts_status @default(ongoing)
+  started_at   DateTime?
+  completed_at DateTime?
+  tab_switches Int                  @default(0)
+  created_at   DateTime?
+  updated_at   DateTime?
+  exam_answers exam_answers[]
+  exams        exams                @relation(fields: [exam_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users        users                @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([exam_id, user_id, status])
+  @@index([status])
+  @@index([user_id, status])
+}
+
+model exams {
+  id               BigInt             @id @default(autoincrement())
+  course_id        BigInt
+  unit_id          BigInt?
+  title            String
+  description      String?
+  duration_minutes Int                @default(60)
+  total_marks      Int                @default(100)
+  pass_marks       Int                @default(50)
+  is_active        Boolean            @default(true)
+  created_at       DateTime?
+  updated_at       DateTime?
+  exam_attempts    exam_attempts[]
+  courses          courses            @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  course_units     course_units?      @relation(fields: [unit_id], references: [id], onUpdate: NoAction)
+  questions        questions[]
+  unit_written_qas unit_written_qas[]
+
+  @@index([course_id])
+  @@index([unit_id])
+}
+
+model failed_jobs {
+  id         BigInt   @id @default(autoincrement())
+  uuid       String   @unique
+  connection String
+  queue      String
+  payload    String
+  exception  String
+  failed_at  DateTime @default(now())
+
+  @@index([connection, queue, failed_at])
+}
+
+model job_batches {
+  id             String  @id
+  name           String
+  total_jobs     Int
+  pending_jobs   Int
+  failed_jobs    Int
+  failed_job_ids String
+  options        String?
+  cancelled_at   Int?
+  created_at     Int
+  finished_at    Int?
+}
+
+model jobs {
+  id           BigInt @id @default(autoincrement())
+  queue        String
+  payload      String
+  attempts     Int
+  reserved_at  Int?
+  available_at Int
+  created_at   Int
+
+  @@index([queue])
+}
+
+model migrations {
+  id        Int    @id @default(autoincrement())
+  migration String
+  batch     Int
+}
+
+model notices {
+  id              BigInt         @id @default(autoincrement())
+  title           String
+  slug            String         @unique
+  description     String?
+  image           String?
+  category        String?
+  source          String?
+  tags            String?
+  seo_title       String?
+  seo_description String?
+  seo_keywords    String?
+  views           BigInt         @default(0)
+  status          notices_status @default(draft)
+  published_at    DateTime?
+  created_at      DateTime?
+  updated_at      DateTime?
+}
+
+model otp_codes {
+  id           BigInt    @id @default(autoincrement())
+  mobile       String
+  code         String
+  expires_at   DateTime
+  last_sent_at DateTime?
+  attempts     Int       @default(0)
+  created_at   DateTime  @default(now())
+
+  @@index([mobile])
+}
+
+model pages {
+  id         BigInt    @id @default(autoincrement())
+  slug       String    @unique
+  title      String
+  content    String
+  is_active  Boolean   @default(true)
+  created_at DateTime?
+  updated_at DateTime?
+}
+
+model password_reset_tokens {
+  email      String    @id
+  token      String
+  created_at DateTime?
+}
+
+model question_options {
+  id           BigInt         @id @default(autoincrement())
+  question_id  BigInt
+  option_text  String
+  is_correct   Boolean        @default(false)
+  created_at   DateTime       @default(now())
+  exam_answers exam_answers[]
+  questions    questions      @relation(fields: [question_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([question_id])
+}
+
+model questions {
+  id               BigInt                  @id @default(autoincrement())
+  exam_id          BigInt
+  course_id        BigInt
+  question_text    String
+  question_type    questions_question_type @default(mcq)
+  marks            Int                     @default(1)
+  explanation      String?
+  model_answer     String?
+  answer           String?
+  sort_order       Int                     @default(0)
+  created_at       DateTime?
+  updated_at       DateTime?
+  exam_answers     exam_answers[]
+  question_options question_options[]
+  courses          courses                 @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  exams            exams                   @relation(fields: [exam_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([course_id])
+  @@index([exam_id])
+}
+
+model referrals {
+  id                                 BigInt           @id @default(autoincrement())
+  referrer_id                        BigInt
+  referred_id                        BigInt
+  bonus_amount                       Decimal          @default(10.00)
+  status                             referrals_status @default(pending)
+  credited_at                        DateTime?
+  created_at                         DateTime         @default(now())
+  users_referrals_referred_idTousers users            @relation("referrals_referred_idTousers", fields: [referred_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_referrals_referrer_idTousers users            @relation("referrals_referrer_idTousers", fields: [referrer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([referred_id])
+  @@index([referrer_id])
+}
+
+model sessions {
+  id            String  @id
+  user_id       BigInt?
+  ip_address    String?
+  user_agent    String?
+  payload       String
+  last_activity Int
+
+  @@index([last_activity])
+  @@index([user_id])
+}
+
+model settings {
+  key        String    @id
+  value      String?
+  created_at DateTime?
+  updated_at DateTime?
+}
+
+model sms_logs {
+  id           BigInt          @id @default(autoincrement())
+  mobile       String
+  message      String
+  type         sms_logs_type
+  status       sms_logs_status @default(sent)
+  api_response String?
+  created_at   DateTime        @default(now())
+
+  @@index([mobile])
+}
+
+model subscriptions {
+  id               BigInt                       @id @default(autoincrement())
+  user_id          BigInt
+  course_id        BigInt
+  plan             subscriptions_plan           @default(basic)
+  amount_paid      Decimal
+  discount_applied Decimal                      @default(0.00)
+  coupon_code      String?
+  payment_method   subscriptions_payment_method @default(bkash)
+  transaction_id   String?
+  status           subscriptions_status         @default(pending)
+  starts_at        DateTime?
+  expires_at       DateTime?
+  created_at       DateTime?
+  updated_at       DateTime?
+  courses          courses                      @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users            users                        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([expires_at])
+  @@index([starts_at])
+  @@index([status])
+  @@index([status, expires_at])
+  @@index([user_id, course_id, status])
+  @@index([course_id])
+}
+
+model support_conversations {
+  id                   BigInt             @id @default(autoincrement())
+  user_id              BigInt             @unique
+  last_message_at      DateTime?
+  last_message_preview String?
+  unread_for_admin     Int                @default(0)
+  unread_for_user      Int                @default(0)
+  created_at           DateTime?
+  updated_at           DateTime?
+  users                users              @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  support_messages     support_messages[]
+
+  @@index([last_message_at])
+}
+
+model support_messages {
+  id                    BigInt                       @id @default(autoincrement())
+  conversation_id       BigInt
+  sender_type           support_messages_sender_type
+  sender_id             BigInt
+  body                  String?
+  image_path            String?
+  read_at               DateTime?
+  created_at            DateTime?
+  updated_at            DateTime?
+  support_conversations support_conversations        @relation(fields: [conversation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                 users                        @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([conversation_id, created_at])
+  @@index([sender_id])
+}
+
+model unit_written_qas {
+  id           BigInt       @id @default(autoincrement())
+  unit_id      BigInt
+  exam_id      BigInt?
+  question     String
+  answer       String
+  explanation  String?
+  sort_order   Int          @default(0)
+  created_at   DateTime?
+  updated_at   DateTime?
+  exams        exams?       @relation(fields: [exam_id], references: [id], onUpdate: NoAction)
+  course_units course_units @relation(fields: [unit_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([exam_id])
+  @@index([unit_id])
+}
+
+model user_device_logs {
+  id               BigInt    @id @default(autoincrement())
+  user_id          BigInt
+  session_id       String?
+  ip_address       String?
+  user_agent       String?
+  device_label     String?
+  forced_logout_at DateTime?
+  created_at       DateTime?
+  updated_at       DateTime?
+  users            users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id, created_at])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  id                                     BigInt                 @id @default(autoincrement())
+  name                                   String
+  avatar                                 String?
+  mobile                                 String?                @unique
+  email                                  String?                @unique
+  referral_code                          String?                @unique
+  referred_by                            String?
+  wallet_balance                         Decimal                @default(0.00)
+  is_verified                            Boolean                @default(false)
+  is_active                              Boolean                @default(true)
+  suspicious_flag                        Boolean                @default(false)
+  suspicious_reason                      String?
+  suspicious_at                          DateTime?
+  first_purchase_done                    Boolean                @default(false)
+  is_admin                               Boolean                @default(false)
+  admin_role                             String?                @default("super_admin")
+  permissions                            String?
+  email_verified_at                      DateTime?
+  password                               String
+  remember_token                         String?
+  created_at                             DateTime?
+  updated_at                             DateTime?
+  registered_course_id                   BigInt?
+  email_campaign_logs                    email_campaign_logs[]
+  exam_attempts                          exam_attempts[]
+  referrals_referrals_referred_idTousers referrals[]            @relation("referrals_referred_idTousers")
+  referrals_referrals_referrer_idTousers referrals[]            @relation("referrals_referrer_idTousers")
+  subscriptions                          subscriptions[]
+  support_conversations                  support_conversations?
+  support_messages                       support_messages[]
+  user_device_logs                       user_device_logs[]
+  courses                                courses?               @relation(fields: [registered_course_id], references: [id], onUpdate: NoAction)
+  wallet_transactions                    wallet_transactions[]
+  withdrawal_requests                    withdrawal_requests[]
+
+  @@index([is_admin, created_at])
+  @@index([is_admin, is_verified])
+  @@index([registered_course_id])
+}
+
+model wallet_transactions {
+  id           BigInt                     @id @default(autoincrement())
+  user_id      BigInt
+  amount       Decimal
+  type         wallet_transactions_type
+  source       wallet_transactions_source
+  description  String?
+  reference_id BigInt?
+  created_at   DateTime                   @default(now())
+  users        users                      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id])
+}
+
+model withdrawal_requests {
+  id             BigInt                     @id @default(autoincrement())
+  user_id        BigInt
+  amount         Decimal
+  payment_method String
+  account_number String
+  status         withdrawal_requests_status @default(pending)
+  transaction_id String?
+  admin_note     String?
+  created_at     DateTime?
+  updated_at     DateTime?
+  users          users                      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id])
+}
+
+enum coupons_discount_type {
+  flat
+  percent
+}
+
+enum support_messages_sender_type {
+  user
+  admin
+}
+
+enum sms_logs_type {
+  otp
+  notification
+  reminder
+}
+
+enum subscriptions_plan {
+  basic
+  pro
+}
+
+enum wallet_transactions_type {
+  credit
+  debit
+}
+
+enum questions_question_type {
+  mcq
+  written
+}
+
+enum referrals_status {
+  pending
+  credited
+}
+
+enum sms_logs_status {
+  sent
+  failed
+}
+
+enum wallet_transactions_source {
+  referral
+  discount
+  payment
+  admin
+}
+
+enum withdrawal_requests_status {
+  pending
+  approved
+  rejected
+}
+
+enum exam_attempts_status {
+  ongoing
+  completed
+  abandoned
+}
+
+enum subscriptions_payment_method {
+  bkash
+  nagad
+  wallet
+  manual
+  sslcommerz
+  aamarpay
+}
+
+enum blogs_status {
+  draft
+  published
+}
+
+enum subscriptions_status {
+  pending
+  pending_gateway
+  active
+  expired
+  cancelled
+  rejected
+}
+
+enum notices_status {
+  draft
+  published
+}
